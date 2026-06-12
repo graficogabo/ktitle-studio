@@ -1,22 +1,4 @@
 <!DOCTYPE html>
-<!--
-  KTitle Studio — Animated title generator for Kdenlive
-  Copyright (C) 2026 Grafico Gabo
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program. If not, see <https://www.gnu.org/licenses/>.
--->
-
 <html lang="es"><head>
 
 <meta charset="utf-8"/>
@@ -2016,7 +1998,9 @@ function buildTimeline() {
       '<span class="material-symbols-outlined text-[16px] mr-2 opacity-50 cursor-grab">drag_indicator</span>' +
       '<span class="material-symbols-outlined text-[16px] mr-2 ' + (isActive ? 'text-on-primary-container' : 'text-on-surface-variant') + '">' + icon + '</span>' +
       '<span class="flex-1 truncate font-label-caps text-[10px] font-semibold uppercase">' + L.name + '</span>' +
-      '<button data-layer-action="visible" data-idx="' + idx + '" class="material-symbols-outlined text-[16px] cursor-pointer hover:text-primary transition-colors bg-transparent border-none">' + (L.visible ? 'visibility' : 'visibility_off') + '</button>' +
+      '<button data-layer-action="moveup" data-idx="' + idx + '" class="material-symbols-outlined text-[15px] cursor-pointer hover:text-primary transition-colors bg-transparent border-none" title="Subir">keyboard_arrow_up</button>' +
+      '<button data-layer-action="movedown" data-idx="' + idx + '" class="material-symbols-outlined text-[15px] cursor-pointer hover:text-primary transition-colors bg-transparent border-none" title="Bajar">keyboard_arrow_down</button>' +
+      '<button data-layer-action="visible" data-idx="' + idx + '" class="material-symbols-outlined text-[16px] cursor-pointer hover:text-primary transition-colors bg-transparent border-none ml-1">' + (L.visible ? 'visibility' : 'visibility_off') + '</button>' +
       '<button data-layer-action="delete" data-idx="' + idx + '" class="material-symbols-outlined text-[16px] cursor-pointer hover:text-error transition-colors bg-transparent border-none ml-1">delete</button>';
     row.addEventListener('click', function(e) {
       if (e.target.dataset.layerAction) return;
@@ -2061,6 +2045,8 @@ function buildTimeline() {
       var idx = parseInt(btn.dataset.idx);
       if (btn.dataset.layerAction === 'visible') toggleVisible(idx);
       else if (btn.dataset.layerAction === 'delete') deleteLayer(idx);
+      else if (btn.dataset.layerAction === 'moveup') moveLayerDown(idx);
+      else if (btn.dataset.layerAction === 'movedown') moveLayerUp(idx);
     });
   });
   
@@ -3487,6 +3473,35 @@ document.addEventListener('click', function(e) {
     menu.style.display = 'none';
   }
 });
+
+
+// Move layer up/down in the timeline order (via buttons)
+function moveLayerUp(idx) {
+  if (idx <= 0) return;
+  // Direct swap with previous
+  var tmp = STATE.layers[idx];
+  STATE.layers[idx] = STATE.layers[idx - 1];
+  STATE.layers[idx - 1] = tmp;
+  STATE.layers.forEach(function(L, i){ L.zIndex = i + 1; });
+  STATE.curIdx = idx - 1;
+  buildTimeline();
+  renderAt(ct);
+  if (STATE.layers[STATE.curIdx]) syncPropsFromLayer(STATE.layers[STATE.curIdx]);
+  if (typeof pushUndo === 'function') pushUndo();
+}
+function moveLayerDown(idx) {
+  if (idx >= STATE.layers.length - 1) return;
+  // Direct swap with next
+  var tmp = STATE.layers[idx];
+  STATE.layers[idx] = STATE.layers[idx + 1];
+  STATE.layers[idx + 1] = tmp;
+  STATE.layers.forEach(function(L, i){ L.zIndex = i + 1; });
+  STATE.curIdx = idx + 1;
+  buildTimeline();
+  renderAt(ct);
+  if (STATE.layers[STATE.curIdx]) syncPropsFromLayer(STATE.layers[STATE.curIdx]);
+  if (typeof pushUndo === 'function') pushUndo();
+}
 
 window.addEventListener('resize', function() { fitCanvas(); renderAt(ct); });
 
